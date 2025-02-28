@@ -1,150 +1,129 @@
-ng new angular-buzzfeed-quizz-clone
-cd angular-buzzfeed-quizz-clone
-ng serve
-ng g c components/quiz
-ng g s services/quiz
-import { Injectable } from '@angular/core';
+pip install azure-ai-textanalytics azure-cognitiveservices-speech
+pip install azure-ai-textanalytics azure-cognitiveservices-speech
+from azure.ai.textanalytics import TextAnalyticsClient
+from azure.core.credentials import AzureKeyCredential
+import json
 
-@Injectable({
-  providedIn: 'root',
-})
-export class QuizService {
-  private perguntas = [
-    {
-      pergunta: 'Qual sua cor favorita?',
-      respostas: [
-        { opcao: 'Vermelho', valor: 10 },
-        { opcao: 'Azul', valor: 20 },
-        { opcao: 'Verde', valor: 30 },
-      ],
-    },
-    {
-      pergunta: 'Escolha um animal:',
-      respostas: [
-        { opcao: 'Cachorro', valor: 10 },
-        { opcao: 'Gato', valor: 20 },
-        { opcao: 'Pássaro', valor: 30 },
-      ],
-    },
-  ];
+# 🔹 Substitua com suas credenciais do Azure
+AZURE_LANGUAGE_KEY = "SUA_CHAVE"
+AZURE_LANGUAGE_ENDPOINT = "SEU_ENDPOINT"
 
-  getPerguntas() {
-    return this.perguntas;
-  }
+# Configuração do cliente
+def authenticate_client():
+    return TextAnalyticsClient(endpoint=AZURE_LANGUAGE_ENDPOINT, credential=AzureKeyCredential(AZURE_LANGUAGE_KEY))
 
-  calcularResultado(pontos: number) {
-    if (pontos <= 20) return 'Você é uma pessoa aventureira!';
-    if (pontos <= 40) return 'Você é uma pessoa criativa!';
-    return 'Você é uma pessoa tranquila!';
-  }
-}
-import { Component, OnInit } from '@angular/core';
-import { QuizService } from 'src/app/services/quiz.service';
+client = authenticate_client()
 
-@Component({
-  selector: 'app-quiz',
-  templateUrl: './quiz.component.html',
-  styleUrls: ['./quiz.component.css']
-})
-export class QuizComponent implements OnInit {
-  perguntas: any[] = [];
-  perguntaAtual = 0;
-  pontuacao = 0;
-  resultado: string | null = null;
+# Lendo frases do arquivo
+with open("inputs/sentences.txt", "r", encoding="utf-8") as file:
+    sentences = [line.strip() for line in file.readlines()]
 
-  constructor(private quizService: QuizService) {}
+# Analisando texto
+response = client.analyze_sentiment(documents=sentences)
 
-  ngOnInit() {
-    this.perguntas = this.quizService.getPerguntas();
-  }
+# Salvando resultados
+results = []
+for idx, doc in enumerate(response):
+    results.append({
+        "Texto": sentences[idx],
+        "Sentimento": doc.sentiment,
+        "Confiança": {
+            "Positivo": doc.confidence_scores.positive,
+            "Neutro": doc.confidence_scores.neutral,
+            "Negativo": doc.confidence_scores.negative,
+        }
+    })
 
-  responder(valor: number) {
-    this.pontuacao += valor;
-    this.perguntaAtual++;
+# Escrevendo saída JSON
+with open("outputs/analysis_results.json", "w", encoding="utf-8") as output_file:
+    json.dump(results, output_file, indent=4, ensure_ascii=False)
 
-    if (this.perguntaAtual >= this.perguntas.length) {
-      this.resultado = this.quizService.calcularResultado(this.pontuacao);
-    }
-  }
-}
-import { Component, OnInit } from '@angular/core';
-import { QuizService } from 'src/app/services/quiz.service';
+print("✅ Análise de texto concluída! Resultados salvos em outputs/analysis_results.json")
+import azure.cognitiveservices.speech as speechsdk
 
-@Component({
-  selector: 'app-quiz',
-  templateUrl: './quiz.component.html',
-  styleUrls: ['./quiz.component.css']
-})
-export class QuizComponent implements OnInit {
-  perguntas: any[] = [];
-  perguntaAtual = 0;
-  pontuacao = 0;
-  resultado: string | null = null;
+# 🔹 Substitua com suas credenciais do Azure
+AZURE_SPEECH_KEY = "SUA_CHAVE"
+AZURE_SPEECH_REGION = "SUA_REGIAO"
 
-  constructor(private quizService: QuizService) {}
+# Inicializando serviço de fala
+speech_config = speechsdk.SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_SPEECH_REGION)
+speech_config.speech_synthesis_voice_name = "pt-BR-FranciscaNeural"
 
-  ngOnInit() {
-    this.perguntas = this.quizService.getPerguntas();
-  }
+# Entrada de texto
+text = "Olá! Este é um teste de conversão de texto em fala com o Azure Speech Studio."
 
-  responder(valor: number) {
-    this.pontuacao += valor;
-    this.perguntaAtual++;
+# Configuração do sintetizador
+speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
 
-    if (this.perguntaAtual >= this.perguntas.length) {
-      this.resultado = this.quizService.calcularResultado(this.pontuacao);
-    }
-  }
-}
-<div *ngIf="!resultado">
-  <h2>{{ perguntas[perguntaAtual]?.pergunta }}</h2>
+# Convertendo texto para fala
+speech_synthesizer.speak_text_async(text).get()
+print("✅ Conversão de texto em fala concluída!")
+import azure.cognitiveservices.speech as speechsdk
 
-  <button *ngFor="let resposta of perguntas[perguntaAtual]?.respostas"
-          (click)="responder(resposta.valor)">
-    {{ resposta.opcao }}
-  </button>
-</div>
+# 🔹 Substitua com suas credenciais do Azure
+AZURE_SPEECH_KEY = "SUA_CHAVE"
+AZURE_SPEECH_REGION = "SUA_REGIAO"
 
-<div *ngIf="resultado">
-  <h2>Resultado:</h2>
-  <p>{{ resultado }}</p>
-</div>
-h2 {
-  color: #ff4081;
-  text-align: center;
-}
+# Inicializando serviço de fala
+speech_config = speechsdk.SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_SPEECH_REGION)
+speech_config.speech_synthesis_voice_name = "pt-BR-FranciscaNeural"
 
-button {
-  display: block;
-  margin: 10px auto;
-  padding: 10px;
-  font-size: 16px;
-  background-color: #6200ea;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
+# Entrada de texto
+text = "Olá! Este é um teste de conversão de texto em fala com o Azure Speech Studio."
 
-button:hover {
-  background-color: #3700b3;
-}
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { AppComponent } from './app.component';
-import { QuizComponent } from './components/quiz/quiz.component';
+# Configuração do sintetizador
+speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
 
-@NgModule({
-  declarations: [
-    AppComponent,
-    QuizComponent
-  ],
-  imports: [
-    BrowserModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
-<h1>Quiz Estilo BuzzFeed</h1>
-<app-quiz></app-quiz>
-ng serve
+# Convertendo texto para fala
+speech_synthesizer.speak_text_async(text).get()
+print("✅ Conversão de texto em fala concluída!")
+import azure.cognitiveservices.speech as speechsdk
+
+# 🔹 Substitua com suas credenciais do Azure
+AZURE_SPEECH_KEY = "SUA_CHAVE"
+AZURE_SPEECH_REGION = "SUA_REGIAO"
+
+# Configurando serviço de reconhecimento de fala
+speech_config = speechsdk.SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_SPEECH_REGION)
+speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, language="pt-BR")
+
+print("🎤 Fale algo...")
+result = speech_recognizer.recognize_once()
+
+if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+    print(f"✅ Texto reconhecido: {result.text}")
+elif result.reason == speechsdk.ResultReason.NoMatch:
+    print("🚨 Nenhuma fala reconhecida.")
+elif result.reason == speechsdk.ResultReason.Canceled:
+    print(f"🚨 Erro: {result.cancellation_details.reason}")
+# 🚀 Projeto de Análise de Texto e Fala com Azure AI
+
+## 📌 Descrição
+Este projeto demonstra como utilizar os serviços **Azure Speech Studio** e **Language Studio** para:
+- 🔹 Analisar textos (detecção de sentimentos, extração de frases-chave).
+- 🔹 Converter texto em fala usando **Azure Speech Studio**.
+- 🔹 Transcrever áudio para texto usando **reconhecimento de fala**.
+
+## 📂 Estrutura do Repositório
+📂 **inputs/** → Contém frases para análise.  
+📂 **outputs/** → Guarda os resultados da análise.  
+📜 **text_analysis.py** → Código para análise de texto.  
+📜 **text_to_speech.py** → Código para converter texto em fala.  
+📜 **speech_to_text.py** → Código para transcrição de áudio.  
+
+## 🎯 Como Executar
+1. Instale as dependências:
+   ```bash
+   pip install azure-ai-textanalytics azure-cognitiveservices-speech
+
+---
+
+### **Passo 4: Publicar no GitHub e Entregar**
+Agora, publique seu projeto no **GitHub**:
+```bash
+git init
+git add .
+git commit -m "Projeto Azure AI concluído"
+git branch -M main
+git remote add origin https://github.com/seu-usuario/azure-ai-project.git
+git push -u origin main
